@@ -7,6 +7,7 @@ from pydantic_settings import BaseSettings
 from typing import List
 
 
+
 class Settings(BaseSettings):
     DATABASE_URL: str = "postgresql://postgres:password@localhost:5432/expense_tracker"
     JWT_SECRET_KEY: str = "change-this"
