@@ -45,5 +45,6 @@ def create_tables():
     Creates all tables that don't exist yet.
     Models must be imported before this runs so Base knows about them.
     """
-    from app.models import user, expense  # noqa — registers models with Base
+    from app.models.user import User        # noqa
+    from app.models.expense import Expense  # noqa
     Base.metadata.create_all(bind=engine)
