@@ -8,7 +8,7 @@
 
 from pydantic import BaseModel, field_validator, ConfigDict
 from typing import Optional, List
-from datetime import date
+from datetime import datetime, date
 from enum import Enum
 
 
@@ -72,6 +72,8 @@ class ExpenseResponse(BaseModel):
     description: Optional[str] = None
     items: List[ExpenseItemResponse]
     total: float
-    created_at: Optional[str] = None
+    created_at: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True)
+
+ExpenseResponse.model_rebuild()
