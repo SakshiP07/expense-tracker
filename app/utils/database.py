@@ -23,7 +23,6 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
 
-
 def get_db():
     """
     Yields a DB session for the duration of one HTTP request.
@@ -45,6 +44,5 @@ def create_tables():
     Creates all tables that don't exist yet.
     Models must be imported before this runs so Base knows about them.
     """
-    from app.models.user import User        # noqa
-    from app.models.expense import Expense  # noqa
+    from app.models import user, expense # noqa
     Base.metadata.create_all(bind=engine)
