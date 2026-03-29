@@ -1,21 +1,5 @@
 // src/components/ExpenseForm.jsx
-// Shared form used by both AddExpensePage and EditExpensePage.
-// Props:
-//   title, subtitle, headerColor → visual customization
-//   initialData                  → pre-fills form for edit mode
-//   onSave(formData)             → called with validated data on submit
-//   onCancel()                   → called when Cancel is clicked
-//   saving                       → disables button while API call runs
-//   saveLabel                    → "Save Expense" or "Update Expense"
-
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-
-const CATEGORIES = [
-  'Students',
-  'Office/Shopkeepers/Freelancer',
-  'Housewives',
-]
 
 const blankItem = () => ({ subject: '', amount: '' })
 
@@ -33,8 +17,7 @@ export default function ExpenseForm({
   saving,
   saveLabel,
 }) {
-  // Pre-fill from initialData (edit mode) or use defaults (add mode)
-  const [category, setCategory]       = useState(initialData?.category || CATEGORIES[0])
+  const [category]                    = useState(initialData?.category || 'Students')
   const [date, setDate]               = useState(initialData?.date || today())
   const [description, setDescription] = useState(initialData?.description || '')
   const [items, setItems]             = useState(
@@ -44,13 +27,11 @@ export default function ExpenseForm({
   )
   const [errors, setErrors] = useState({})
 
-  // Live total — updates as user types amounts
   const runningTotal = items.reduce((sum, item) => {
     const v = parseFloat(item.amount)
     return sum + (isNaN(v) ? 0 : v)
   }, 0)
 
-  // ── Item handlers ──────────────────────────────────────────────────────
   function updateItem(index, field, value) {
     setItems(prev => {
       const copy = [...prev]
@@ -64,16 +45,17 @@ export default function ExpenseForm({
   }
 
   function removeItem(index) {
-    if (items.length === 1) return // always keep one row
+    if (items.length === 1) return
     setItems(prev => prev.filter((_, i) => i !== index))
   }
 
-  // ── Validation ─────────────────────────────────────────────────────────
   function validate() {
     const e = {}
 
-    if (!category) e.category = 'Select a category'
-    if (!date)     e.date     = 'Select a date'
+    if (!date) e.date = 'Select a date'
+
+    // Description is now required
+    if (!description.trim()) e.description = 'Description is required'
 
     const itemErrors = items.map(item => {
       const ie = {}
@@ -93,14 +75,13 @@ export default function ExpenseForm({
     return Object.keys(e).length === 0
   }
 
-  // ── Submit ─────────────────────────────────────────────────────────────
   function handleSubmit() {
     if (!validate()) return
 
     onSave({
       category,
       date,
-      description: description.trim() || null,
+      description: description.trim(),
       items: items.map(item => ({
         subject: item.subject.trim(),
         amount: parseFloat(item.amount),
@@ -110,11 +91,15 @@ export default function ExpenseForm({
 
   return (
     <div style={styles.page}>
-      {/* Back link */}
-      <button style={styles.backBtn} onClick={onCancel}>
-        ← Back to Dashboard
-      </button>
 
+       <div style={styles.topBar}>
+    <button style={styles.backBtn} onClick={onCancel}>
+      <span style={styles.backArrow}>←</span>
+      Back to Dashboard
+    </button>
+  </div>
+
+    <div style={styles.cardWrapper}>
       <div style={styles.card}>
         {/* Coloured header */}
         <div style={{ ...styles.cardHeader, background: headerColor }}>
@@ -122,21 +107,19 @@ export default function ExpenseForm({
           <p style={styles.subtitle}>{subtitle}</p>
         </div>
 
+        {/* Scrollable body */}
         <div style={styles.body}>
+
           {/* ── Category + Date row ── */}
           <div style={styles.row}>
             <div style={styles.field}>
               <label style={styles.label}>Category *</label>
-              <select
-                value={category}
-                onChange={e => setCategory(e.target.value)}
-                style={styles.input}
-              >
-                {CATEGORIES.map(c => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
-              {errors.category && <span style={styles.err}>{errors.category}</span>}
+              <input
+                type="text"
+                value="Student"
+                disabled
+                style={{ ...styles.input, background: '#f3f4f6', cursor: 'not-allowed' }}
+              />
             </div>
 
             <div style={styles.field}>
@@ -152,26 +135,37 @@ export default function ExpenseForm({
             </div>
           </div>
 
-          {/* ── Description ── */}
+          {/* ── Description (required) ── */}
           <div style={styles.field}>
-            <label style={styles.label}>
-              Description <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>(optional)</span>
-            </label>
+            <label style={styles.label}>Description *</label>
             <input
               type="text"
               value={description}
-              onChange={e => setDescription(e.target.value)}
+              onChange={e => {
+                setDescription(e.target.value)
+                // Clear error as user types
+                if (errors.description) setErrors(prev => ({ ...prev, description: undefined }))
+              }}
               placeholder="e.g. Monthly grocery run"
-              style={styles.input}
+              style={{
+                ...styles.input,
+                ...(errors.description ? { borderColor: 'var(--danger)' } : {})
+              }}
               maxLength={500}
             />
+            {/* Inline notification — no alert() */}
+            {errors.description && (
+              <div style={styles.fieldError}>
+                <span style={styles.fieldErrorIcon}>⚠</span>
+                {errors.description}
+              </div>
+            )}
           </div>
 
-          {/* ── Items section ── */}
+          {/* ── Items section — scrollable ── */}
           <div style={styles.itemsSection}>
             <div style={styles.itemsHeader}>
               <span style={styles.itemsTitle}>Expense Items</span>
-              {/* Live total updates as user types */}
               <span style={styles.totalPill}>
                 Total: ₹{runningTotal.toFixed(2)}
               </span>
@@ -184,89 +178,76 @@ export default function ExpenseForm({
               <span style={{ width: 40 }} />
             </div>
 
-            {/* Item rows */}
-            {items.map((item, i) => (
-              <div key={i} style={styles.itemRow}>
-                {/* Subject */}
-                <div style={{ flex: 1 }}>
-                  <input
-                    type="text"
-                    placeholder="e.g. Notebook, Lunch, Rent"
-                    value={item.subject}
-                    onChange={e => updateItem(i, 'subject', e.target.value)}
-                    style={{
-                      ...styles.input,
-                      ...(errors.items?.[i]?.subject ? { borderColor: 'var(--danger)' } : {})
-                    }}
-                  />
-                  {errors.items?.[i]?.subject && (
-                    <span style={styles.err}>{errors.items[i].subject}</span>
-                  )}
+            {/* Scrollable item rows */}
+            <div style={styles.itemsScroll}>
+              {items.map((item, i) => (
+                <div key={i} style={styles.itemRow}>
+                  <div style={{ flex: 1 }}>
+                    <input
+                      type="text"
+                      placeholder="e.g. Notebook, Lunch, Rent"
+                      value={item.subject}
+                      onChange={e => updateItem(i, 'subject', e.target.value)}
+                      style={{
+                        ...styles.input,
+                        ...(errors.items?.[i]?.subject ? { borderColor: 'var(--danger)' } : {})
+                      }}
+                    />
+                    {errors.items?.[i]?.subject && (
+                      <span style={styles.err}>{errors.items[i].subject}</span>
+                    )}
+                  </div>
+
+                  <div style={{ width: 140 }}>
+                    <input
+                      type="number"
+                      placeholder="0.00"
+                      value={item.amount}
+                      onChange={e => updateItem(i, 'amount', e.target.value)}
+                      min="0.01"
+                      step="0.01"
+                      style={{
+                        ...styles.input,
+                        ...(errors.items?.[i]?.amount ? { borderColor: 'var(--danger)' } : {})
+                      }}
+                    />
+                    {errors.items?.[i]?.amount && (
+                      <span style={styles.err}>{errors.items[i].amount}</span>
+                    )}
+                  </div>
+
+                  <button
+                    style={{ ...styles.removeBtn, opacity: items.length === 1 ? 0.4 : 1 }}
+                    onClick={() => removeItem(i)}
+                    disabled={items.length === 1}
+                    title="Remove item"
+                  >
+                    ✕
+                  </button>
                 </div>
+              ))}
+            </div>
 
-                {/* Amount */}
-                <div style={{ width: 140 }}>
-                  <input
-                    type="number"
-                    placeholder="0.00"
-                    value={item.amount}
-                    onChange={e => updateItem(i, 'amount', e.target.value)}
-                    min="0.01"
-                    step="0.01"
-                    style={{
-                      ...styles.input,
-                      ...(errors.items?.[i]?.amount ? { borderColor: 'var(--danger)' } : {})
-                    }}
-                  />
-                  {errors.items?.[i]?.amount && (
-                    <span style={styles.err}>{errors.items[i].amount}</span>
-                  )}
-                </div>
-
-                {/* Remove row */}
-                <button
-                  style={{
-                    ...styles.removeBtn,
-                    opacity: items.length === 1 ? 0.4 : 1,
-                  }}
-                  onClick={() => removeItem(i)}
-                  disabled={items.length === 1}
-                  title="Remove item"
-                >
-                  ✕
-                </button>
-              </div>
-            ))}
-
-            {/* Add another item button */}
             <button style={styles.addItemBtn} onClick={addItem}>
               + Add Another Item
             </button>
           </div>
 
-          {/* ── Summary box ── */}
+          {/* ── Summary box — always visible at bottom ── */}
           <div style={styles.summaryBox}>
             <div style={styles.summaryRow}>
-              <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-                Number of items
-              </span>
+              <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Number of items</span>
               <span style={{ fontWeight: 600 }}>{items.length}</span>
             </div>
             <div style={{ ...styles.summaryRow, marginBottom: 0 }}>
-              <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-                Grand Total
-              </span>
-              <span style={styles.grandTotal}>
-                ₹{runningTotal.toFixed(2)}
-              </span>
+              <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>Grand Total</span>
+              <span style={styles.grandTotal}>₹{runningTotal.toFixed(2)}</span>
             </div>
           </div>
 
           {/* ── Action buttons ── */}
           <div style={styles.actions}>
-            <button style={styles.cancelBtn} onClick={onCancel}>
-              Cancel
-            </button>
+            <button style={styles.cancelBtn} onClick={onCancel}>Cancel</button>
             <button
               style={{ ...styles.saveBtn, opacity: saving ? 0.7 : 1 }}
               onClick={handleSubmit}
@@ -275,34 +256,82 @@ export default function ExpenseForm({
               {saving ? 'Saving…' : saveLabel}
             </button>
           </div>
+
         </div>
+      </div>
       </div>
     </div>
   )
 }
 
 const styles = {
-  page: { maxWidth: 760, margin: '0 auto' },
-  backBtn: {
-    background: 'none', border: 'none', padding: 0,
-    color: 'var(--text-secondary)', fontSize: 14,
-    cursor: 'pointer', marginBottom: 20,
-    fontFamily: 'var(--font-body)',
+  page: {
+    maxWidth: 760,
+    margin: '0 auto',
+    padding: '24px 16px',
+    // Make the whole page scroll, card stays in place
+    minHeight: '100vh',
+    display: 'flex',
+    flexDirection: 'column',
   },
+
+  // ── Modern back button ──
+//   backBtn: {
+//     display: 'inline-flex',
+//     alignItems: 'center',
+//     gap: 8,
+//     padding: '8px 16px',
+//     borderRadius: 99,
+//     border: '1.5px solid var(--border)',
+//     background: '#fff',
+//     color: 'var(--text-secondary)',
+//     fontSize: 13,
+//     fontWeight: 500,
+//     cursor: 'pointer',
+//     fontFamily: 'var(--font-body)',
+//     marginBottom: 20,
+//     alignSelf: 'flex-start', // stays left
+//     boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+//     transition: 'all 0.15s',
+//   },
+  backArrow: {
+    fontSize: 15,
+    lineHeight: 1,
+  },
+
   card: {
-    background: '#fff', borderRadius: 16,
-    boxShadow: 'var(--shadow-lg)',
-    border: '1px solid var(--border)',
-    overflow: 'hidden',
-  },
-  cardHeader: { padding: '28px 32px' },
+  position: 'fixed',        // ← pins it in place
+  top: 80,                  // ← below navbar
+  left: '50%',              // ← center horizontally
+  transform: 'translateX(-50%)',  // ← true centering trick
+  width: '90%',             // ← responsive width
+  maxWidth: 760,
+  maxHeight: 'calc(100vh - 120px)',
+  background: '#fff',
+  borderRadius: 16,
+  boxShadow: 'var(--shadow-lg)',
+  border: '1px solid var(--border)',
+  overflow: 'hidden',
+  display: 'flex',
+  flexDirection: 'column',
+  zIndex: 5,
+},
+
+  cardHeader: { padding: '28px 32px', flexShrink: 0 },
   title: {
     fontFamily: 'var(--font-display)',
     fontSize: 24, fontWeight: 700,
     color: '#fff', marginBottom: 4,
   },
   subtitle: { fontSize: 14, color: 'rgba(255,255,255,0.85)' },
-  body: { padding: '28px 32px' },
+
+  // Scrollable body
+  body: {
+    padding: '28px 32px',
+    overflowY: 'auto',
+    flex: 1,
+  },
+
   row: { display: 'flex', gap: 20, marginBottom: 20, flexWrap: 'wrap' },
   field: {
     display: 'flex', flexDirection: 'column',
@@ -310,17 +339,40 @@ const styles = {
   },
   label: { fontSize: 13, fontWeight: 600, color: '#374151' },
   input: {
-    padding: '10px 13px', borderRadius: 'var(--radius-sm)',
+    padding: '10px 13px',
+    borderRadius: 'var(--radius-sm)',
     border: '1.5px solid var(--border)',
     fontSize: 14, color: 'var(--text-primary)',
     background: '#fff', width: '100%',
     fontFamily: 'var(--font-body)',
     transition: 'border-color 0.2s',
+    boxSizing: 'border-box',
   },
   err: { fontSize: 12, color: 'var(--danger)', marginTop: 2 },
+
+  // Inline field-level error notification (replaces alert)
+  fieldError: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 6,
+    padding: '7px 12px',
+    borderRadius: 8,
+    background: '#FEF2F2',
+    border: '1px solid #FECACA',
+    color: '#DC2626',
+    fontSize: 13,
+    fontWeight: 500,
+  },
+  fieldErrorIcon: {
+    fontSize: 14,
+    flexShrink: 0,
+  },
+
   itemsSection: {
     borderTop: '1px solid #F3F4F6',
-    paddingTop: 24, marginBottom: 20,
+    paddingTop: 24,
+    marginBottom: 20,
   },
   itemsHeader: {
     display: 'flex', alignItems: 'center',
@@ -344,12 +396,21 @@ const styles = {
     textTransform: 'uppercase',
     letterSpacing: '0.04em',
   },
+
+  // Scrollable item list — max 3 rows visible, then scrolls
+  itemsScroll: {
+    maxHeight: 200,
+    overflowY: 'auto',
+    paddingRight: 4,
+  },
+
   itemRow: {
     display: 'flex', gap: 12,
     alignItems: 'flex-start', marginBottom: 10,
   },
   removeBtn: {
-    width: 36, height: 40, borderRadius: 'var(--radius-sm)',
+    width: 36, height: 40,
+    borderRadius: 'var(--radius-sm)',
     border: '1.5px solid var(--danger-border)',
     background: 'var(--danger-light)',
     color: 'var(--danger)', fontSize: 14,
@@ -367,11 +428,14 @@ const styles = {
     cursor: 'pointer', width: '100%',
     fontFamily: 'var(--font-body)',
   },
+
   summaryBox: {
     background: '#F9FAFB', borderRadius: 10,
     padding: '16px 20px',
     border: '1px solid var(--border)',
     marginBottom: 24,
+    // Always visible — sticks after items scroll
+    flexShrink: 0,
   },
   summaryRow: {
     display: 'flex', justifyContent: 'space-between',
@@ -382,9 +446,11 @@ const styles = {
     color: 'var(--orange)',
     fontFamily: 'var(--font-display)',
   },
+
   actions: {
     display: 'flex', gap: 12,
     justifyContent: 'flex-end',
+    flexShrink: 0,
   },
   cancelBtn: {
     padding: '11px 24px', borderRadius: 9,
@@ -401,4 +467,23 @@ const styles = {
     boxShadow: 'var(--shadow-orange)',
     transition: 'opacity 0.2s',
   },
+  backBtn: {
+  position: 'fixed',   // ← add this
+  top: 80,             // ← below your navbar
+  left: 24,            // ← left edge
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 8,
+  padding: '8px 16px',
+  borderRadius: 99,
+  border: '1.5px solid var(--border)',
+  background: '#fff',
+  color: 'var(--text-secondary)',
+  fontSize: 13,
+  fontWeight: 500,
+  cursor: 'pointer',
+  fontFamily: 'var(--font-body)',
+  boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+  zIndex: 10,
+}
 }

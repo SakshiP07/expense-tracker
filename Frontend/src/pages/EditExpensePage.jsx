@@ -27,9 +27,13 @@ export default function EditExpensePage() {
   }, [id])
 
   async function handleSave(formData) {
+      const cleanData = Object.fromEntries(
+    Object.entries(formData).filter(([_, v]) => v !== null && v !== undefined)
+  )
     setSaving(true)
     try {
-      await api.patch(`/expenses/${id}`, formData)
+        await api.patch(`/expenses/${id}`, { ...cleanData, expense_id: id }) // ← add this
+        // await api.patch(`/expenses/${id}`, formData)
       navigate('/dashboard')
     } catch (err) {
       alert(err.response?.data?.detail || 'Failed to update.')

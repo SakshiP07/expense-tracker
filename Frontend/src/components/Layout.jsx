@@ -62,7 +62,9 @@ export default function Layout() {
 
       {/* ── Page content rendered here ── */}
       <main style={styles.main}>
-        <Outlet />
+        <div style={{ width: '100%', maxWidth: 1100 }}>
+    <Outlet />
+  </div>
       </main>
     </div>
   )
@@ -74,6 +76,7 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     background: 'var(--bg)',
+    overflow: 'hidden',
   },
   nav: {
     display: 'flex',
@@ -85,8 +88,11 @@ const styles = {
     borderBottom: '1px solid var(--border)',
     position: 'sticky',
     top: 0,
+    left: 0,             // ← add this
+    right: 0,    
     zIndex: 100,
     boxShadow: 'var(--shadow)',
+    overflow: 'hidden',
   },
   logo: {
     display: 'flex',
@@ -154,10 +160,14 @@ const styles = {
     transition: 'border-color 0.2s',
   },
   main: {
-    flex: 1,
-    padding: '32px',
-    maxWidth: 1100,
-    margin: '0 auto',
-    width: '100%',
-  },
+  position: 'fixed',        // ← fix main too
+  top: 64,                  // ← exactly navbar height
+  left: 0,
+  right: 0,
+  bottom: 0,                // ← stretches to bottom
+  padding: '32px',
+  overflowY: 'auto',        // ← only main scrolls if needed
+  display: 'flex',
+  justifyContent: 'center', // ← centers content horizontally
+},
 }
