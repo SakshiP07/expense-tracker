@@ -7,7 +7,7 @@
 # ExpenseResponse → what we send back to the client
 
 from pydantic import BaseModel, field_validator, ConfigDict
-from typing import Optional, List
+from typing import Annotated, Optional, List
 from datetime import datetime, date
 from enum import Enum
 
@@ -41,7 +41,7 @@ class ExpenseItem(BaseModel):
 class ExpenseCreate(BaseModel):
     category: CategoryEnum
     date: date
-    description: Optional[str] = None
+    description: str = None
     items: List[ExpenseItem]
 
     @field_validator("items")
@@ -55,8 +55,8 @@ class ExpenseCreate(BaseModel):
 class ExpenseUpdate(BaseModel):
     # All fields optional → supports partial PATCH
     category: Optional[CategoryEnum] = None
-    date: Optional[date] = None
-    description: Optional[str] = None
+    date: Annotated[Optional[date], Field(default=None)]
+    description: str = None
     items: Optional[List[ExpenseItem]] = None
 
 
