@@ -149,8 +149,11 @@ class TestExpenseCRUD:
         db.add(e); db.commit(); eid = e.id; db.close()
 
         res = client.patch(f"/expenses/{eid}",
-            json={"items": [{"subject": "Book", "amount": 150}, {"subject": "Pen", "amount": 20}]},
-            headers=auth(token_a))
+    json={
+        "date": "2024-01-01",
+        "items": [{"subject": "Book", "amount": 150}, {"subject": "Pen", "amount": 20}]
+    },
+    headers=auth(token_a))
         assert res.status_code == 200
         assert res.json()["total"] == 170.0
 

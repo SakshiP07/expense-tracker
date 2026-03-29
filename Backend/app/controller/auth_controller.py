@@ -17,18 +17,18 @@ from app.schema.auth import TokenResponse, UserResponse
 
 def google_signin(token: str, db: Session) -> TokenResponse:
     # Step 1 & 2: verify with Google, extract info
-    # id_info = verify_google_token(token)
-    id_info = {
-    "sub": "test_user_001",           # Google's unique user ID — our primary key
-    "email": "sakshi.pokhriyal007@gmail.com",
-    "name": "Sakshi",
-    "picture": "",                    # empty is fine — avatar fallback shows initial
-    "email_verified": True,           # Google always sends this
-    "iss": "accounts.google.com",     # issuer — Google sends this
-    "aud": "your-client-id",          # audience — your Google client ID
-    "iat": 1711670400,                # issued at (not used by us)
-    "exp": 9999999999,                # expiry (not used by us)
-}
+    id_info = verify_google_token(token)
+#     id_info = {
+#     "sub": "test_user_001",           # Google's unique user ID — our primary key
+#     "email": "sakshi.pokhriyal007@gmail.com",
+#     "name": "Sakshi",
+#     "picture": "",                    # empty is fine — avatar fallback shows initial
+#     "email_verified": True,           # Google always sends this
+#     "iss": "accounts.google.com",     # issuer — Google sends this
+#     "aud": "your-client-id",          # audience — your Google client ID
+#     "iat": 1711670400,                # issued at (not used by us)
+#     "exp": 9999999999,                # expiry (not used by us)
+# }
     
 
     google_id = id_info["sub"]          # Google's unique user ID

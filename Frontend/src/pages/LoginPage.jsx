@@ -2,6 +2,7 @@
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { GoogleLogin } from '@react-oauth/google'
 
 export default function LoginPage() {
   const { user, login, loading } = useAuth()
@@ -11,14 +12,18 @@ export default function LoginPage() {
     if (user) navigate('/dashboard', { replace: true })
   }, [user])
 
-  async function handleDevLogin() {
-    const result = await login('mock_token_bypass')
-    if (result.success) {
-      navigate('/dashboard')
-    } else {
-      alert(result.error || 'Sign-in failed. Please try again.')
-    }
+  async function handleGoogleSuccess(credentialResponse) {
+  const result = await login(credentialResponse.credential)
+  if (result.success) {
+    navigate('/dashboard')
+  } else {
+    alert(result.error || 'Sign-in failed. Please try again.')
   }
+}
+
+function handleGoogleError() {
+  alert('Google Sign-In failed. Please try again.')
+}
 
   return (
     <div style={styles.wrapper}>
@@ -128,14 +133,22 @@ export default function LoginPage() {
           <div style={styles.divider} />
 
           <div style={styles.googleBtnWrapper}>
-            <button onClick={handleDevLogin} style={styles.devBtn}>
-              <img
+            <GoogleLogin
+            onSuccess={handleGoogleSuccess}
+            onError={handleGoogleError}
+            useOneTap={false}
+            shape="rectangular"
+            size="large"
+            text="signin_with_google"
+            theme="outline"
+            width="300"
+            />
+              {/* <img
                 src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
                 alt="Google"
                 style={{ width: 18, height: 18 }}
-              />
-              Sign in with Google
-            </button>
+              /> */}
+              {/* Sign in with Google */}
           </div>
 
           {loading && (

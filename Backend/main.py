@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse  # ← add this
+from fastapi.responses import JSONResponse
 
 from config import settings
 from app.utils.database import create_tables
@@ -20,9 +20,13 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="Expense Tracker API", version="1.0.0", lifespan=lifespan)
 
 @app.exception_handler(RequestValidationError)
-async def validation_exception_handler(request: Request, exc: RequestValidationError):
-    print("422 VALIDATION ERROR:", exc.errors())  # ← prints full detail in terminal
-    return JSONResponse(status_code=422, content={"detail": exc.errors()})
+async def validation_exception_handler(request, exc):
+    errors = exc.errors()
+    # Convert Python exceptions to strings so JSONResponse works
+    for e in errors:
+        if "ctx" in e and "error" in e["ctx"]:
+            e["ctx"]["error"] = str(e["ctx"]["error"])
+    return JSONResponse(status_code=422, content={"detail": errors})
 
 app.add_middleware(
     CORSMiddleware,
