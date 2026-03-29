@@ -10,5 +10,5 @@ dist/
 .env
 .DS_Store
 
-# OS files
+# OS files 
 *.localized
